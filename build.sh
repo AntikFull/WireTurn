@@ -78,7 +78,7 @@ ensure_olcrtc_wbstream_fix() {
         return 0
     fi
 
-    if [ ! -d "$dir/.git" ]; then
+    if [ ! -e "$dir/.git" ]; then
         echo "ERROR: external/olcrtc is outdated and is not a git checkout."
         echo "Run: git submodule update --init --recursive external/olcrtc"
         exit 1
