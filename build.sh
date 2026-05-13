@@ -67,6 +67,28 @@ build_go_project() {
     done
 }
 
+ensure_olcrtc_wbstream_fix() {
+    local dir="$ROOT_DIR/external/olcrtc"
+    local api="$dir/internal/provider/wbstream/api.go"
+    local peer="$dir/internal/provider/wbstream/peer.go"
+    local fix_ref="${OLCRTC_WBSTREAM_FIX_REF:-922c3265330b70a1ab560614418891595297d18d}"
+
+    if grep -q "/api-room-manager/v2/room/%s/connection-details" "$api" &&
+       grep -q "wss://rtc-el-01.wb.ru" "$peer"; then
+        return 0
+    fi
+
+    if [ ! -d "$dir/.git" ]; then
+        echo "ERROR: external/olcrtc is outdated and is not a git checkout."
+        echo "Run: git submodule update --init --recursive external/olcrtc"
+        exit 1
+    fi
+
+    echo "Updating olcrtc WB Stream API fix ($fix_ref)..."
+    git -C "$dir" fetch --depth 1 origin "$fix_ref"
+    git -C "$dir" checkout --detach "$fix_ref"
+}
+
 build_hev_tunnel() {
     local dir=$1; local out_name=$2
     echo "Checking $out_name..."
@@ -106,6 +128,7 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "go" ]; then
     [ ! -f "external/olcrtc/go.mod" ]         && git submodule update --init --recursive external/olcrtc
     [ ! -f "external/vless-client/go.mod" ]   && git submodule update --init --recursive external/vless-client
     [ ! -f "external/turnable/go.mod" ]        && git submodule update --init --recursive external/turnable
+    ensure_olcrtc_wbstream_fix
     build_go_project "external/olcrtc"       "libolcrtc.so"     "./cmd/olcrtc"
     build_go_project "external/vless-client"  "libxray.so"      "."
     build_go_project "external/turnable"      "libturnable.so"  "./cmd"
